@@ -63,20 +63,23 @@ func ioctl(fd, name, data uintptr) error {
 // On Windows it uses Beep function via syscall.
 //
 // On Web it plays hard coded beep sound.
-func Beep(freq float64, duration int) error {
-	if freq == 0 {
-		freq = DefaultFreq
-	} else if freq > 20000 {
-		freq = 20000
-	} else if freq < 0 {
-		freq = DefaultFreq
+func Beep(options ...Option) error {
+	opt := &Opt{
+		freq:     DefaultFreq,
+		duration: time.Duration(DefaultDuration) * time.Millisecond,
 	}
 
-	if duration == 0 {
-		duration = DefaultDuration
+	for _, o := range options {
+		o(opt)
 	}
 
-	period := int(float64(clockTickRate) / freq)
+	if opt.freq > 20000 {
+		opt.freq = 20000
+	} else if opt.freq < 0 {
+		opt.freq = DefaultFreq
+	}
+
+	period := int(float64(clockTickRate) / opt.freq)
 
 	var evdev bool
 
@@ -105,14 +108,14 @@ func Beep(freq float64, duration int) error {
 		ev := inputEvent{}
 		ev.Type = evSnd
 		ev.Code = sndTone
-		ev.Value = int32(freq)
+		ev.Value = int32(opt.freq)
 
 		d := *(*[unsafe.Sizeof(ev)]byte)(unsafe.Pointer(&ev))
 
 		// Start beep
 		f.Write(d[:])
 
-		time.Sleep(time.Duration(duration) * time.Millisecond)
+		time.Sleep(opt.duration)
 
 		ev.Value = 0
 		d = *(*[unsafe.Sizeof(ev)]byte)(unsafe.Pointer(&ev))
@@ -126,7 +129,7 @@ func Beep(freq float64, duration int) error {
 			return err
 		}
 
-		time.Sleep(time.Duration(duration) * time.Millisecond)
+		time.Sleep(opt.duration)
 
 		// Stop beep
 		err = ioctl(f.Fd(), kiocsound, uintptr(0))

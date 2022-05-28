@@ -6,6 +6,7 @@ package beeep
 import (
 	"errors"
 	"os/exec"
+	"strings"
 
 	"github.com/godbus/dbus/v5"
 )
@@ -13,8 +14,18 @@ import (
 // Notify sends desktop notification.
 //
 // On Linux it tries to send notification via D-Bus and it will fallback to `notify-send` binary.
-func Notify(title, message, appIcon string) error {
-	appIcon = pathAbs(appIcon)
+func Notify(options ...Option) error {
+	opt := &Opt{
+		title:   "app",
+		message: "Something happened",
+		icon:    "",
+	}
+
+	for _, o := range options {
+		o(opt)
+	}
+
+	appIcon := pathAbs(opt.icon)
 
 	cmd := func() error {
 		send, err := exec.LookPath("sw-notify-send")
@@ -25,7 +36,8 @@ func Notify(title, message, appIcon string) error {
 			}
 		}
 
-		c := exec.Command(send, title, message, "-i", appIcon)
+		args := strings.Split(buildNotifySend(opt), " ")
+		c := exec.Command(send, args...)
 		return c.Run()
 	}
 
@@ -34,7 +46,7 @@ func Notify(title, message, appIcon string) error {
 		if err != nil {
 			return err
 		}
-		c := exec.Command(send, "--title", title, "--passivepopup", message, "10", "--icon", appIcon)
+		c := exec.Command(send, "--title", opt.title, "--passivepopup", opt.message, "10", "--icon", appIcon)
 		return c.Run()
 	}
 
@@ -44,7 +56,7 @@ func Notify(title, message, appIcon string) error {
 	}
 	obj := conn.Object("org.freedesktop.Notifications", dbus.ObjectPath("/org/freedesktop/Notifications"))
 
-	call := obj.Call("org.freedesktop.Notifications.Notify", 0, "", uint32(0), appIcon, title, message, []string{}, map[string]dbus.Variant{}, int32(-1))
+	call := obj.Call("org.freedesktop.Notifications.Notify", 0, "", uint32(0), appIcon, opt.title, opt.message, []string{}, map[string]dbus.Variant{}, int32(-1))
 	if call.Err != nil {
 		e := cmd()
 		if e != nil {

@@ -9,8 +9,18 @@ import (
 )
 
 // Notify sends desktop notification.
-func Notify(title, message, appIcon string) error {
-	appIcon = pathAbs(appIcon)
+func Notify(options ...Option) error {
+	opt := &Opt{
+		title:   "app",
+		message: "Something happened",
+		icon:    "",
+	}
+
+	for _, o := range options {
+		o(opt)
+	}
+
+	appIcon = pathAbs(opt.icon)
 
 	cmd := func() error {
 		send, err := exec.LookPath("sw-notify-send")
@@ -21,7 +31,8 @@ func Notify(title, message, appIcon string) error {
 			}
 		}
 
-		c := exec.Command(send, title, message, "-i", appIcon)
+		args := strings.Split(buildNotifySend(opt), " ")
+		c := exec.Command(send, args...)
 		return c.Run()
 	}
 
@@ -30,7 +41,7 @@ func Notify(title, message, appIcon string) error {
 		if err != nil {
 			return err
 		}
-		c := exec.Command(send, "--title", title, "--passivepopup", message, "10", "--icon", appIcon)
+		c := exec.Command(send, "--title", opt.title, "--passivepopup", opt.message, "10", "--icon", appIcon)
 		return c.Run()
 	}
 
