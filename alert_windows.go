@@ -8,14 +8,24 @@ import (
 )
 
 // Alert displays a desktop notification and plays a default system sound.
-func Alert(title, message, appIcon string) error {
+func Alert(options ...Option) error {
 	if isWindows10 {
-		note := toastNotification(title, message, pathAbs(appIcon))
+		opt := &Opt{
+			title:   "app",
+			message: "Something happened",
+			icon:    "",
+		}
+
+		for _, o := range options {
+			o(opt)
+		}
+	
+		note := toastNotification(opt)
 		note.Audio = toast.Default
 		return note.Push()
 	}
 
-	if err := Notify(title, message, appIcon); err != nil {
+	if err := Notify(options...); err != nil {
 		return err
 	}
 	return Beep(DefaultFreq, DefaultDuration)

@@ -40,14 +40,24 @@ func init() {
 }
 
 // Notify sends desktop notification.
-func Notify(title, message, appIcon string) error {
-	if isWindows10 {
-		return toastNotify(title, message, appIcon)
+func Notify(options ...Option) error {
+	opt := &Opt{
+		title:   "app",
+		message: "Something happened",
+		icon:    "",
 	}
 
-	err := baloonNotify(title, message, appIcon, false)
+	for _, o := range options {
+		o(opt)
+	}
+	
+	if isWindows10 {
+		return toastNotify(opt)
+	}
+
+	err := baloonNotify(opt.title, opt.message, opt.icon, false)
 	if err != nil {
-		e := msgNotify(title, message)
+		e := msgNotify(opt.title, opt.message)
 		if e != nil {
 			return errors.New("beeep: " + err.Error() + "; " + e.Error())
 		}
@@ -87,18 +97,28 @@ func baloonNotify(title, message, appIcon string, bigIcon bool) error {
 	return tray.ShowMessage(title, message, bigIcon)
 }
 
-func toastNotify(title, message, appIcon string) error {
-	notification := toastNotification(title, message, pathAbs(appIcon))
+func toastNotify(opt *Opt) error {
+	notification := toastNotification(opt)
 	return notification.Push()
 }
 
-func toastNotification(title, message, appIcon string) toast.Notification {
-	return toast.Notification{
+func toastNotification(opt *Opt) toast.Notification {
+	t := toast.Notification{
 		AppID:   applicationID,
-		Title:   title,
-		Message: message,
-		Icon:    appIcon,
+		Title:   opt.title,
+		Message: opt.message,
+		Icon:    pathAbs(opt.icon),
 	}
+	
+	if opt.durationName != "" {
+		result, err := toast.Duration(opt.durationName)
+		t.Duration = result
+		if err != nil {
+			t.Duration, _ = toast.Duration("short")
+		}
+	}
+	
+	return t
 }
 
 func appID() string {
