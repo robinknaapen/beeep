@@ -12,15 +12,15 @@ type Action struct {
 }
 
 type Opt struct {
-	title    string
-	message  string
-	icon     string
-	level    int
-	actions  []Action
-	duration time.Duration
+	title        string
+	message      string
+	icon         string
+	level        Level
+	actions      []Action
+	duration     time.Duration
 	durationName string
-	freq     float64
-	audio string
+	freq         float64
+	audio        string
 }
 
 type Option func(*Opt)
@@ -43,7 +43,7 @@ func IconOption(icon string) Option {
 	}
 }
 
-func LevelOption(level int) Option {
+func LevelOption(level Level) Option {
 	return func(o *Opt) {
 		o.level = level
 	}
@@ -61,7 +61,7 @@ func DurationOption(duration time.Duration) Option {
 	}
 }
 
-// DurationNameOption can only be either short or long for	
+// DurationNameOption can only be either short or long for
 // windows 10 notifications
 func DurationNameOption(duration string) Option {
 	return func(o *Opt) {

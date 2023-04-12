@@ -1,4 +1,4 @@
-module github.com/zerodoctor/beeep
+module github.com/robinknaapen/beeep
 
 go 1.14
 

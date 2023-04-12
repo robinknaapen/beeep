@@ -56,7 +56,9 @@ func Notify(options ...Option) error {
 	}
 	obj := conn.Object("org.freedesktop.Notifications", dbus.ObjectPath("/org/freedesktop/Notifications"))
 
-	call := obj.Call("org.freedesktop.Notifications.Notify", 0, "", uint32(0), appIcon, opt.title, opt.message, []string{}, map[string]dbus.Variant{}, int32(-1))
+	call := obj.Call("org.freedesktop.Notifications.Notify", 0, "", uint32(0), appIcon, opt.title, opt.message, []string{}, map[string]dbus.Variant{
+		`urgency`: dbus.MakeVariant(opt.level),
+	}, int32(-1))
 	if call.Err != nil {
 		e := cmd()
 		if e != nil {
